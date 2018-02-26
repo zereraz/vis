@@ -8,7 +8,7 @@
   },
   "scripts": {
     "start-psc": "pulp --watch build",
-    "start": "webpack-dev-server --content-base dist/ --host 0.0.0.0",
+    "start": "pulp --watch  --then \"webpack-dev-server --content-base dist/ --host 0.0.0.0\" build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
