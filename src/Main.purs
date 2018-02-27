@@ -4,6 +4,7 @@ import Prelude
 
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE, log, logShow)
+import Data.Array (foldM)
 import Data.Maybe (Maybe(..))
 import FRP (FRP)
 import FRP.Behavior (Behavior, sample_, step)
@@ -21,6 +22,10 @@ data StateTree a b = Draw (Shape a) | Parent b (StateTree a b) (StateTree a b)
 data Shape a = Circle Arc | Rect Rectangle
 
 newtype MetaData = MetaData { groupName :: String }
+
+data AnimationOperation = Translate Number Number | Rotate Number
+
+type AnimationOperations = Array AnimationOperation
 
 instance drawShape :: Drawable (Shape a) where
   draw ctx (Circle a) = beginPath ctx *> arc ctx a *> stroke ctx *> closePath ctx
@@ -88,9 +93,15 @@ subTree = Parent defaultMetaData (Draw $ circle 300.0 250.0 20.0) (Draw $ rectan
 tree :: forall a. StateTree (Shape a) MetaData
 tree = Parent defaultMetaData subTree (Draw $ circle 50.0 100.0 40.0)
 
+runOp :: forall a. Drawable a => StateTree a MetaData -> AnimationOperation -> StateTree a MetaData
+runOp (Draw s) (Translate x y) = Draw (translate x y s)
+runOp (Parent v lTree rTree) (Translate x y) = Parent v (translate x y lTree) (translate x y rTree)
+runOp s _ = s
+
+
 animate :: forall a b eff. Drawable a => Eq a => (Behavior (StateTree a MetaData)) -> Event Int -> ((StateTree a MetaData) -> Eff _ Unit) -> Eff _ Unit
 animate stateBeh frameStream push = let sampler = sample_ stateBeh frameStream
-                                     in subscribe sampler (\s -> let newState = translate 0.0 1.0 s in when (not $ newState == s) (push newState)) *> pure unit
+                                     in subscribe sampler (\s -> (foldM (\state op -> pure $ runOp state op) s [Translate 0.0 1.0, Translate 1.0 0.0]) >>= \newState -> when (not $ newState == s) (push newState)) *> pure unit
 
 initCanvas :: forall e. CanvasElement -> Context2D -> Eff (AllEffs e) Unit
 initCanvas c ctx = do
@@ -101,6 +112,9 @@ initCanvas c ctx = do
   setStrokeStyle "#000000" ctx *>
   setupUpdate stateBeh event ctx *>
   animate stateBeh frameStream push
+
+  -- draw first time
+  -- first event in the stateBeh
   push tree
 
 drawBound :: forall a e. Drawable a => Context2D -> a -> Eff (AllEffs e) Unit
