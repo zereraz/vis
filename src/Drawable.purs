@@ -11,11 +11,6 @@ import Graphics.Canvas (Arc, CANVAS, CanvasElement, Context2D, Rectangle, arc, b
 import Math (pi)
 import Types
 
-circle :: forall a. Number -> Number -> Number -> Shape a
-circle x y r = Circle {x, y, r, start: 0.0, end: 2.0 * pi}
-
-rectangle :: forall a. Number -> Number -> Number -> Number -> Shape a
-rectangle x y w h = Rect {x, y, w, h}
 
 class Drawable a where
   draw :: forall eff. Context2D -> a -> Eff (canvas :: CANVAS | eff) Context2D
@@ -26,7 +21,7 @@ instance drawShape :: Drawable (Shape a) where
   draw ctx (Circle a) = beginPath ctx *> arc ctx a *> stroke ctx *> closePath ctx
   draw ctx (Rect a) = beginPath ctx *> rect ctx a *> stroke ctx *> closePath ctx
 
-  getBound (Circle a) = {x:a.x - a.r, y:a.y - a.r, w: 2.0 * a.r, h: 2.0 * a.r}
+  getBound (Circle {x,y,r}) = {x:x - r, y:y - r, w: 2.0 * r, h: 2.0 * r}
   getBound (Rect a) = a
 
   translate x y (Circle c) = Circle (c {x = c.x + x, y = c.y + y})
@@ -52,4 +47,4 @@ addBounds {x:x1,y:y1,w:w1,h:h1}
 
 drawBound :: forall a e. Drawable a => Context2D -> a -> Eff (AllEffs e) Unit
 drawBound ctx s = let bound = getBound s
-                in draw ctx (Rect bound) *> pure unit
+                    in draw ctx (Rect bound) *> pure unit
