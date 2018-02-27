@@ -17,8 +17,8 @@ import Math (pi)
 import Unsafe.Coerce (unsafeCoerce)
 import Utils (tree, subTree, defaultMetaData)
 
--- find bound to redrawn and clear the screen with that bound
--- actually draw the stateTree given to it via state behavior
+-- | Find bound to redraw and clear the screen with that bound
+-- | then draw the stateTree given to it via state behavior
 -- TODO: add drawable constraint on a and typecheck
 setupUpdate
   :: forall eff a.
@@ -33,8 +33,8 @@ setupUpdate stateB evStream ctx =
         rectBoundToClear {x, y, w, h} = {x: x - 2.0, y: y - 2.0, w: w + 4.0, h: h + 4.0}
         sampler = sample_ stateB evStream
 
--- run Animation operation on any StateTree
--- and return a new updated StateTree
+-- | Run Animation operation on any StateTree
+-- | and return a new updated StateTree
 runOp
   :: forall a.
    Drawable a
@@ -45,9 +45,8 @@ runOp (Draw s) (Translate x y) = Draw (translate x y s)
 runOp (Parent v lTree rTree) (Translate x y) = Parent v (translate x y lTree) (translate x y rTree)
 runOp s _ = s
 
--- at every frameStream event perform animation operations
--- check if state changed, if changed push the new state to stateStream
--- at each tick perform all animOperations
+-- | At each event/tick of frameStream perform all animOperations
+-- | Check if state changed, if changed push the new state to stateStream
 animate
   :: forall a eff
    . Drawable a
@@ -61,14 +60,15 @@ animate stateB frameStream push =
       subscriber = subscribe sampler
   in subscribe sampler onSubscribe
     where
-      -- send new state event only if state changed
+      -- | Send new state event when state changed
       updateIfChanged newState oldState = when (not $ newState == oldState) (push newState) *> pure newState
-      -- perform each operation and update
+      -- | Perform each operation and update
       onSubscribe = \s -> let animOperations = [Translate 0.0 1.0, Translate 1.0 0.0]
                           in foldM (\state op -> updateIfChanged (runOp state op) state) s animOperations
 
--- create stateStream - events of new states
--- setup update loop and animation operations loop
+-- | Create stateStream - stream of events for any new state
+-- | Setup update loop and animation operations loop
+-- TODO: use cancellers or register them somewhere
 initCanvas :: forall e. CanvasElement -> Context2D -> Eff (AllEffs e) Unit
 initCanvas c ctx = do
   {event, push} <- create
