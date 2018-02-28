@@ -7,12 +7,14 @@ import Control.Monad.Eff.Console (log)
 import Data.Array (foldM)
 import Data.Map (empty)
 import Data.Maybe (Maybe(..))
-import Drawable (class Drawable, getBound, draw, translate)
+import Drawable (class Drawable, draw, getBound, rotate, translate)
 import FRP.Behavior (Behavior, sample_, step)
 import FRP.Event (Event, create, subscribe)
 import FRP.Event.Time (interval)
-import Graphics.Canvas (CanvasElement, Context2D, clearRect, getCanvasElementById, getContext2D)
+import Graphics.Canvas (Arc, CANVAS, CanvasElement, Context2D, Rectangle, arc, beginPath, clearRect, closePath, getCanvasElementById, getContext2D, rect, setStrokeStyle, stroke)
+import Math (pi, Radians)
 import Types (Graphic(..), Effs, StateTree(..), MetaData, AnimationOperation(..), AllEffs)
+import Unsafe.Coerce (unsafeCoerce)
 import Utils (tree, subTree, getAnimOps)
 
 -- | Find bound to redraw and clear the screen with that bound
@@ -42,6 +44,10 @@ runOp
    -> StateTree a MetaData
 runOp (Draw p m s) (Translate x y) = Draw p m (translate x y s)
 runOp (Parent v lTree rTree) (Translate x y) = Parent v (translate x y lTree) (translate x y rTree)
+
+runOp (Draw p m s) (Rotate x y ang) = Draw p m (rotate x y ang s)
+runOp (Parent v lTree rTree) (Rotate x y ang) = Parent v (rotate x y ang lTree) (rotate x y ang rTree)
+
 runOp s _ = s
 
 -- | At each event/tick of frameStream perform all animOperations
@@ -69,8 +75,8 @@ animate stateB frameStream push =
 initCanvas :: CanvasElement -> Context2D -> Eff (Effs) Unit
 initCanvas c ctx = do
 -- | graphic variables containing their own animation cycle and update cycle
-  g <- createAnim ctx (tree [Translate 0.0 1.0, Translate 1.0 0.0]) 60
-  g1 <- createAnim ctx (subTree [Translate 1.0 0.0]) 60
+  g <- createAnim ctx (tree [Translate 0.0 1.0, Rotate 0.0 0.0 (pi / 4.0)]) 60
+  g1 <- createAnim ctx (subTree [Translate 1.0 1.0]) 60
   pure unit
 
 -- Every Animation contains a state
