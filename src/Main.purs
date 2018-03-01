@@ -7,7 +7,7 @@ import Control.Monad.Eff.Console (log)
 import Data.Array (foldM)
 import Data.Map (empty)
 import Data.Maybe (Maybe(..))
-import Drawable (class Drawable, draw, getBound, rotate, translate)
+import Drawable (class Drawable, draw, getBound, rotate, scale, translate)
 import FRP.Behavior (Behavior, sample_, step)
 import FRP.Event (Event, create, subscribe)
 import FRP.Event.Time (interval)
@@ -48,7 +48,8 @@ runOp (Parent v lTree rTree) (Translate x y) = Parent v (translate x y lTree) (t
 runOp (Draw p m s) (Rotate x y ang) = Draw p m (rotate x y ang s)
 runOp (Parent v lTree rTree) (Rotate x y ang) = Parent v (rotate x y ang lTree) (rotate x y ang rTree)
 
-runOp s _ = s
+runOp (Draw p m s) (Scale x y r) = Draw p m (scale x y r s)
+runOp (Parent v lTree rTree) (Scale x y r) = Parent v (scale x y r lTree) (scale x y r rTree)
 
 -- | At each event/tick of frameStream perform all animOperations
 -- | Check if state changed, if changed push the new state to stateStream

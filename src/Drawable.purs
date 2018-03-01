@@ -3,6 +3,7 @@ module Drawable (
   , getBound
   , translate
   , rotate
+  , scale
   , draw
   , setProperties
   ) where
@@ -37,7 +38,7 @@ class Drawable a where
   getBound :: a -> Rectangle
   translate :: Number -> Number -> a -> a
   rotate :: Number -> Number -> Radians -> a -> a
-  -- scale :: Number -> Number -> Number -> a -> a
+  scale :: Number -> Number -> Number -> a -> a
   setProperties :: forall eff. Context2D -> Map String String -> a -> Eff (CanvasEff eff) (Array Context2D)
 
 instance drawShape :: Drawable (Shape a) where
@@ -65,6 +66,15 @@ instance drawShape :: Drawable (Shape a) where
                                 _ -> Rect r
   rotate x y ang (Path p) = let o t = {x: t.x - x, y: t.y - y}
                             in Path $ (\t -> t {x = ((o t).x * cos ang) - ((o t).y * sin ang) + x, y = ((o t).y * cos ang) + ((o t).x * sin ang) + y}) <$> p
+  
+  scale x y t (Circle c) = let o = {x: c.x - x, y: c.y - y}
+                              in Circle $ c {x = (o.x * (t + 1.0)) + x, y = (o.y * (t + 1.0)) + y, r = t * c.r}
+  scale x y t (Rect r) = let o k = {x: k.x - x, y: k.y - y}
+                         in case (toPoints $ Rect r) of
+                              Path p -> Path $ (\k -> k {x = ((o k).x * (t + 1.0)) + x, y = ((o k).y * (t + 1.0)) + y}) <$> p
+                              _ -> Rect r
+  scale x y t (Path p) = let o k = {x: k.x - x, y: k.y - y}
+                         in Path $ (\k -> k {x = ((o k).x * (t + 1.0)) + x, y = ((o k).y * (t + 1.0)) + y}) <$> p
 
   setProperties ctx props _ = traverse (applyProperty ctx) $ (toProperty <$> toUnfoldable props) :: Array Property
 
@@ -84,6 +94,9 @@ instance drawStateTree :: Drawable a => Drawable (StateTree a MetaData) where
 
   rotate x y ang (Draw p m s) = Draw p m $ rotate x y ang s
   rotate x y ang (Parent val leftTree rightTree) = Parent val (rotate x y ang leftTree) (rotate x y ang rightTree)
+
+  scale x y r (Draw p m s) = Draw p m $ scale x y r s
+  scale x y r (Parent val lefttree righttree) = Parent val (scale x y r lefttree) (scale x y r righttree)
 
 class Pathable a where
   toPoints :: Drawable a => a -> a
