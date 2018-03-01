@@ -1,6 +1,6 @@
 module Drawable (
     class Drawable
-  , getBound
+  , bound
   , translate
   , rotate
   , scale
@@ -35,7 +35,7 @@ path' ctx p = do
 
 class Drawable a where
   draw :: forall eff. Context2D -> Map String String -> a -> Eff (CanvasEff eff) Context2D
-  getBound :: a -> Rectangle
+  bound :: a -> Rectangle
   translate :: Number -> Number -> a -> a
   rotate :: Number -> Number -> Radians -> a -> a
   scale :: Number -> Number -> Number -> a -> a
@@ -46,13 +46,13 @@ instance drawShape :: Drawable (Shape a) where
   draw ctx props s@(Rect a) = beginPath ctx *> rect ctx a *> stroke ctx *> closePath ctx
   draw ctx props s@(Path p) = beginPath ctx *> path' ctx p *> stroke ctx *> closePath ctx
 
-  getBound (Circle {x,y,r}) = {x:x - r, y:y - r, w: 2.0 * r, h: 2.0 * r}
-  getBound (Rect a) = a
-  getBound (Path p) = let minX = foldl (\a b -> min a b) infinity $ map _.x p
-                          minY = foldl (\a b -> min a b) infinity $ map _.y p
-                          maxX = foldl (\a b -> max a b) (-1.0 * infinity) $ map _.x p
-                          maxY = foldl (\a b -> max a b) (-1.0 * infinity) $ map _.y p
-                      in {x: minX, y: minY, w: maxX - minX, h: maxY - minY}
+  bound (Circle {x,y,r}) = {x:x - r, y:y - r, w: 2.0 * r, h: 2.0 * r}
+  bound (Rect a) = a
+  bound (Path p) = let minX = foldl (\a b -> min a b) infinity $ map _.x p
+                       minY = foldl (\a b -> min a b) infinity $ map _.y p
+                       maxX = foldl (\a b -> max a b) (-1.0 * infinity) $ map _.x p
+                       maxY = foldl (\a b -> max a b) (-1.0 * infinity) $ map _.y p
+                   in {x: minX, y: minY, w: maxX - minX, h: maxY - minY}
 
   translate x y (Circle c) = Circle (c {x = c.x + x, y = c.y + y})
   translate x y (Rect r) = Rect (r {x = r.x + x, y = r.y + y})
@@ -83,8 +83,8 @@ instance drawStateTree :: Drawable a => Drawable (StateTree a MetaData) where
   draw ctx p (Draw props _ s) = draw ctx props s
   draw ctx p (Parent _ leftTree rightTree) = draw ctx p leftTree *> draw ctx p rightTree
 
-  getBound (Draw _ _ s) = getBound s
-  getBound (Parent _ leftTree rightTree) = addBounds (getBound leftTree) (getBound rightTree)
+  bound (Draw _ _ s) = bound s
+  bound (Parent _ leftTree rightTree) = addBounds (bound leftTree) (bound rightTree)
 
   translate x y (Draw p m s) = Draw p m (translate x y s)
   translate x y (Parent m leftTree rightTree) = Parent m (translate x y leftTree) (translate x y rightTree)
@@ -120,4 +120,4 @@ addBounds {x:x1,y:y1,w:w1,h:h1}
                                   in  {x: minX, y: minY, w: maxX - minX, h: maxY - minY}
 
 drawBound :: forall a e. Drawable a => Context2D -> a -> Eff (AllEffs e) Unit
-drawBound ctx s = draw ctx empty (Rect $ getBound s) *> pure unit
+drawBound ctx s = draw ctx empty (Rect $ bound s) *> pure unit

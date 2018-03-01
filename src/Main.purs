@@ -7,7 +7,7 @@ import Control.Monad.Eff.Console (log)
 import Data.Array (foldM)
 import Data.Map (empty)
 import Data.Maybe (Maybe(..))
-import Drawable (class Drawable, draw, getBound, rotate, scale, translate)
+import Drawable (class Drawable, draw, bound, rotate, scale, translate)
 import FRP.Behavior (Behavior, sample_, step)
 import FRP.Event (Event, create, subscribe)
 import FRP.Event.Time (interval)
@@ -29,7 +29,7 @@ setupUpdate
    -> Eff (AllEffs eff) (Eff (AllEffs eff) Unit)
 setupUpdate ctx stateB evStream =
   subscribe sampler
-    \s -> clearRect ctx (rectBoundToClear (getBound s)) *> draw ctx empty s
+    \s -> clearRect ctx (rectBoundToClear $ bound s) *> draw ctx empty s
       where
         rectBoundToClear {x, y, w, h} = {x: x - 2.0, y: y - 2.0, w: w + 4.0, h: h + 4.0}
         sampler = sample_ stateB evStream
