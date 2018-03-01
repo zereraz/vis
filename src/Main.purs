@@ -11,10 +11,9 @@ import Drawable (class Drawable, draw, bound, rotate, scale, translate)
 import FRP.Behavior (Behavior, sample_, step)
 import FRP.Event (Event, create, subscribe)
 import FRP.Event.Time (interval)
-import Graphics.Canvas (Arc, CANVAS, CanvasElement, Context2D, Rectangle, arc, beginPath, clearRect, closePath, getCanvasElementById, getContext2D, rect, setStrokeStyle, stroke)
-import Math (pi, Radians)
+import Graphics.Canvas (CanvasElement, Context2D, clearRect, getCanvasElementById, getContext2D)
+import Math (pi)
 import Types (Graphic(..), Effs, StateTree(..), MetaData, AnimationOperation(..), AllEffs)
-import Unsafe.Coerce (unsafeCoerce)
 import Utils (tree, subTree, getAnimOps)
 
 -- | Find bound to redraw and clear the screen with that bound
