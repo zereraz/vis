@@ -1,8 +1,7 @@
 module Utils where
 
-import Prelude
-import Types
-
+import Prelude (($), (*))
+import Types (Shape(..), StateTree(..), AnimationOperation, MetaData(..))
 import Math (pi)
 
 circle :: forall a. Number -> Number -> Number -> Shape a

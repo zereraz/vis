@@ -1,15 +1,15 @@
-module Drawable where
+module Drawable (
+    class Drawable
+  , getBound
+  , translate
+  , draw
+  ) where
 
 import Prelude
+
 import Control.Monad.Eff (Eff)
-import Control.Monad.Eff.Console (CONSOLE, log, logShow)
-import FRP (FRP)
-import FRP.Behavior (Behavior, sample_, step)
-import FRP.Event (Event, create, subscribe)
-import FRP.Event.Time (interval)
-import Graphics.Canvas (Arc, CANVAS, CanvasElement, Context2D, Rectangle, arc, beginPath, clearRect, closePath, getCanvasElementById, getContext2D, rect, setStrokeStyle, stroke)
-import Math (pi)
-import Types
+import Graphics.Canvas (Context2D, CANVAS, Rectangle, arc, beginPath, closePath, rect, stroke)
+import Types (Shape(..), StateTree(..), MetaData, AllEffs)
 
 
 class Drawable a where
@@ -35,9 +35,9 @@ instance drawStateTree :: Drawable a => Drawable (StateTree a MetaData) where
   getBound (Parent _ leftTree rightTree) = addBounds (getBound leftTree) (getBound rightTree)
 
   translate x y (Draw m s) = Draw m (translate x y s)
-  translate x y (Parent val leftTree rightTree) = Parent val (translate x y leftTree) (translate x y rightTree)
+  translate x y (Parent m leftTree rightTree) = Parent m (translate x y leftTree) (translate x y rightTree)
 
-addBounds :: forall a. Rectangle -> Rectangle -> Rectangle
+addBounds :: Rectangle -> Rectangle -> Rectangle
 addBounds {x:x1,y:y1,w:w1,h:h1}
           {x:x2,y:y2,w:w2,h:h2} = let minX = min x1 x2
                                       maxX = max (x1 + w1) (x2 + w2)
@@ -46,5 +46,4 @@ addBounds {x:x1,y:y1,w:w1,h:h1}
                                    in  {x: minX, y: minY, w: maxX - minX, h: maxY - minY}
 
 drawBound :: forall a e. Drawable a => Context2D -> a -> Eff (AllEffs e) Unit
-drawBound ctx s = let bound = getBound s
-                    in draw ctx (Rect bound) *> pure unit
+drawBound ctx s = let bound = getBound s in draw ctx (Rect bound) *> pure unit

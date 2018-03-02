@@ -12,9 +12,9 @@ module Types ( AllEffs
 import Prelude
 
 import Control.Monad.Eff (Eff)
-import Control.Monad.Eff.Console (CONSOLE, log, logShow)
+import Control.Monad.Eff.Console (CONSOLE)
 import FRP (FRP)
-import Graphics.Canvas (Arc, CANVAS, CanvasElement, Context2D, Rectangle, arc, beginPath, clearRect, closePath, getCanvasElementById, getContext2D, rect, setStrokeStyle, stroke)
+import Graphics.Canvas (Arc, CANVAS, Rectangle)
 
 type AllEffs eff = (console :: CONSOLE, canvas :: CANVAS, frp :: FRP | eff)
 type CanvasEff eff = (canvas :: CANVAS | eff)

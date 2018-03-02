@@ -1,21 +1,17 @@
 module Main where
 
-import Drawable
+import Drawable (class Drawable, getBound, draw, translate)
 import Prelude
-import Types
-
+import Types (Graphic(..), Effs, StateTree(..), MetaData, AnimationOperation(..), AllEffs)
 import Control.Monad.Eff (Eff)
-import Control.Monad.Eff.Console (CONSOLE, log, logShow)
+import Control.Monad.Eff.Console (log)
 import Data.Array (foldM)
 import Data.Maybe (Maybe(..))
-import FRP (FRP)
 import FRP.Behavior (Behavior, sample_, step)
 import FRP.Event (Event, create, subscribe)
 import FRP.Event.Time (interval)
-import Graphics.Canvas (Arc, CANVAS, CanvasElement, Context2D, Rectangle, arc, beginPath, clearRect, closePath, getCanvasElementById, getContext2D, rect, setStrokeStyle, stroke)
-import Math (pi)
-import Unsafe.Coerce (unsafeCoerce)
-import Utils (tree, subTree, defaultMetaData, getAnimOps)
+import Graphics.Canvas (CanvasElement, Context2D, clearRect, getCanvasElementById, getContext2D, setStrokeStyle)
+import Utils (tree, subTree, getAnimOps)
 
 -- | Find bound to redraw and clear the screen with that bound
 -- | then draw the stateTree given to it via state behavior
@@ -68,7 +64,7 @@ animate stateB frameStream push =
 
 -- | Create stateStream - stream of events for any new state
 -- | Setup update loop and animation operations loop
-initCanvas :: forall e. CanvasElement -> Context2D -> Eff (Effs) Unit
+initCanvas :: CanvasElement -> Context2D -> Eff (Effs) Unit
 initCanvas c ctx = do
   _ <- setStrokeStyle "#000000" ctx
   g <- createAnim ctx (tree [Translate 0.0 1.0, Translate 1.0 0.0]) 60
@@ -80,7 +76,7 @@ initCanvas c ctx = do
 -- Animation loop where animation operations are done to state
 -- so it has animation pipe line
 createAnim
-  :: forall a eff
+  :: forall a
    . Drawable a
    => Eq a
    => Context2D
@@ -98,7 +94,7 @@ createAnim ctx state frameRate = do
 
 
 
-main :: forall e. Eff (Effs) Unit
+main :: Eff (Effs) Unit
 main = do
   maybeCanvas <- getCanvasElementById "canvas"
   case maybeCanvas of
