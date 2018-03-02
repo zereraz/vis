@@ -75,15 +75,8 @@ initCanvas c ctx = do
   g1 <- createAnim ctx (subTree [Translate 1.0 0.0]) 60
   pure unit
 
-type Gref a = {
-  updateCanceller :: forall e. Eff Effs Unit
-  , animCanceller :: Eff Effs Unit
-  , state :: Drawable a => StateTree a MetaData
-}
-newtype Graphic a = Graphic (Gref a)
-
 -- Every Animation contains a state
--- has own update loop where it is really getting drawn
+-- has own update loop where it actually get's drawn
 -- Animation loop where animation operations are done to state
 -- so it has animation pipe line
 createAnim
