@@ -28,13 +28,13 @@ instance drawShape :: Drawable (Shape a) where
   translate x y (Rect r) = Rect (r {x = r.x + x, y = r.y + y})
 
 instance drawStateTree :: Drawable a => Drawable (StateTree a MetaData) where
-  draw ctx (Draw s) = draw ctx s
+  draw ctx (Draw _ s) = draw ctx s
   draw ctx (Parent _ leftTree rightTree) = draw ctx leftTree *> draw ctx rightTree
 
-  getBound (Draw s) = getBound s
+  getBound (Draw _ s) = getBound s
   getBound (Parent _ leftTree rightTree) = addBounds (getBound leftTree) (getBound rightTree)
 
-  translate x y (Draw s) = Draw $ translate x y s
+  translate x y (Draw m s) = Draw m (translate x y s)
   translate x y (Parent val leftTree rightTree) = Parent val (translate x y leftTree) (translate x y rightTree)
 
 addBounds :: forall a. Rectangle -> Rectangle -> Rectangle

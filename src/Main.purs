@@ -15,18 +15,19 @@ import FRP.Event.Time (interval)
 import Graphics.Canvas (Arc, CANVAS, CanvasElement, Context2D, Rectangle, arc, beginPath, clearRect, closePath, getCanvasElementById, getContext2D, rect, setStrokeStyle, stroke)
 import Math (pi)
 import Unsafe.Coerce (unsafeCoerce)
-import Utils (tree, subTree, defaultMetaData)
+import Utils (tree, subTree, defaultMetaData, getAnimOps)
 
 -- | Find bound to redraw and clear the screen with that bound
 -- | then draw the stateTree given to it via state behavior
 -- TODO: add drawable constraint on a and typecheck
 setupUpdate
-  :: forall eff a.
-   Behavior (StateTree (Shape a) MetaData)
-   -> Event (StateTree (Shape a) MetaData)
-   -> Context2D
+  :: forall eff a
+   . Drawable a
+   => Context2D
+   -> Behavior (StateTree a MetaData)
+   -> Event (StateTree a MetaData)
    -> Eff (AllEffs eff) (Eff (AllEffs eff) Unit)
-setupUpdate stateB evStream ctx =
+setupUpdate ctx stateB evStream =
   subscribe sampler
     \s -> clearRect ctx (rectBoundToClear (getBound s)) *> draw ctx s
       where
@@ -36,12 +37,12 @@ setupUpdate stateB evStream ctx =
 -- | Run Animation operation on any StateTree
 -- | and return a new updated StateTree
 runOp
-  :: forall a.
-   Drawable a
+  :: forall a
+   . Drawable a
    => StateTree a MetaData
    -> AnimationOperation
    -> StateTree a MetaData
-runOp (Draw s) (Translate x y) = Draw (translate x y s)
+runOp (Draw m s) (Translate x y) = Draw m (translate x y s)
 runOp (Parent v lTree rTree) (Translate x y) = Parent v (translate x y lTree) (translate x y rTree)
 runOp s _ = s
 
@@ -63,27 +64,48 @@ animate stateB frameStream push =
       -- | Send new state event when state changed
       updateIfChanged newState oldState = when (not $ newState == oldState) (push newState) *> pure newState
       -- | Perform each operation and update
-      onSubscribe = \s -> let animOperations = [Translate 0.0 1.0, Translate 1.0 0.0]
-                          in foldM (\state op -> updateIfChanged (runOp state op) state) s animOperations
+      onSubscribe = \s -> foldM (\state op -> updateIfChanged (runOp state op) state) s (getAnimOps s)
 
 -- | Create stateStream - stream of events for any new state
 -- | Setup update loop and animation operations loop
--- TODO: use cancellers or register them somewhere
-initCanvas :: forall e. CanvasElement -> Context2D -> Eff (AllEffs e) Unit
+initCanvas :: forall e. CanvasElement -> Context2D -> Eff (Effs) Unit
 initCanvas c ctx = do
+  _ <- setStrokeStyle "#000000" ctx
+  g <- createAnim ctx (tree [Translate 0.0 1.0, Translate 1.0 0.0]) 60
+  g1 <- createAnim ctx (subTree [Translate 1.0 0.0]) 60
+  pure unit
+
+type Gref a = {
+  updateCanceller :: forall e. Eff Effs Unit
+  , animCanceller :: Eff Effs Unit
+  , state :: Drawable a => StateTree a MetaData
+}
+newtype Graphic a = Graphic (Gref a)
+
+-- Every Animation contains a state
+-- has own update loop where it is really getting drawn
+-- Animation loop where animation operations are done to state
+-- so it has animation pipe line
+createAnim
+  :: forall a eff
+   . Drawable a
+   => Eq a
+   => Context2D
+   -> StateTree a MetaData
+   -> Int
+   -> Eff Effs (Graphic a)
+createAnim ctx state frameRate = do
   {event, push} <- create
-  let stateBeh = step tree event
-      frameInterval = 1000 / 60
+  let stateBeh = step state event
+      frameInterval = 1000 / frameRate
       frameStream = interval frameInterval
-  setStrokeStyle "#000000" ctx *>
-  animate stateBeh frameStream push *>
-  setupUpdate stateBeh event ctx *>
+  animCanceller <- animate stateBeh frameStream push
+  updateCanceller <- setupUpdate ctx stateBeh event
+  pure $ Graphic {animCanceller, updateCanceller, state}
 
-  -- draw first time
-  -- first event in the stateBeh
-  push tree
 
-main :: forall e. Eff (console :: CONSOLE, canvas :: CANVAS, frp :: FRP | e) Unit
+
+main :: forall e. Eff (Effs) Unit
 main = do
   maybeCanvas <- getCanvasElementById "canvas"
   case maybeCanvas of
