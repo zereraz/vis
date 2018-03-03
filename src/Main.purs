@@ -38,7 +38,7 @@ runOp
    => StateTree a MetaData
    -> AnimationOperation
    -> StateTree a MetaData
-runOp (Draw m s) (Translate x y) = Draw m (translate x y s)
+runOp (Draw p m s) (Translate x y) = Draw p m (translate x y s)
 runOp (Parent v lTree rTree) (Translate x y) = Parent v (translate x y lTree) (translate x y rTree)
 runOp s _ = s
 
