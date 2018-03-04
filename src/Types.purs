@@ -7,15 +7,21 @@ module Types ( AllEffs
              , AnimationOperation(..)
              , AnimationOperations(..)
              , Graphic(..)
-             , Gref) where
+             , Gref
+             , class IsProperty
+             , toProperty
+             , applyProperty
+             , Property(..)
+             , PropVal(..)) where
 
 import Prelude
 
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE)
 import Data.Map (Map)
+import Data.Tuple (Tuple(..))
 import FRP (FRP)
-import Graphics.Canvas (Arc, CANVAS, Rectangle)
+import Graphics.Canvas (Arc, CANVAS, Context2D, Rectangle, setFillStyle, setStrokeStyle)
 
 type AllEffs eff = (console :: CONSOLE, canvas :: CANVAS, frp :: FRP | eff)
 type CanvasEff eff = (canvas :: CANVAS | eff)
@@ -32,6 +38,24 @@ newtype MetaData = MetaData { groupName :: String, animOps :: Array AnimationOpe
 data AnimationOperation = Translate Number Number | Rotate Number
 
 type AnimationOperations = Array AnimationOperation
+
+data Property = Stroke PropVal |  Id PropVal | Fill PropVal | Shadow PropVal | NoSet
+
+data PropVal = StrokeVal String | IdVal String | FillVal String | ShadowVal String
+
+class IsProperty a where
+  toProperty :: Tuple String String -> a
+  applyProperty :: forall eff. Context2D -> a -> Eff (canvas :: CANVAS | eff) Context2D
+
+instance propertyIsProperty :: IsProperty Property where
+  toProperty (Tuple k v)
+    | k == "stroke" = Stroke (StrokeVal v)
+    | k == "fill" = Fill (FillVal v)
+    | otherwise = NoSet
+
+  applyProperty ctx (Stroke (StrokeVal s)) = setStrokeStyle s ctx
+  applyProperty ctx (Fill (FillVal f)) = setFillStyle f ctx
+  applyProperty ctx _ = pure ctx
 
 -- | Each graphic contains it's animation canceller
 -- | update loop canceller

@@ -1,16 +1,18 @@
 module Main where
 
-import Drawable (class Drawable, getBound, draw, translate)
 import Prelude
-import Types (Graphic(..), Effs, StateTree(..), MetaData, AnimationOperation(..), AllEffs)
+
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (log)
 import Data.Array (foldM)
+import Data.Map (empty)
 import Data.Maybe (Maybe(..))
+import Drawable (class Drawable, getBound, draw, translate)
 import FRP.Behavior (Behavior, sample_, step)
 import FRP.Event (Event, create, subscribe)
 import FRP.Event.Time (interval)
-import Graphics.Canvas (CanvasElement, Context2D, clearRect, getCanvasElementById, getContext2D, setStrokeStyle)
+import Graphics.Canvas (CanvasElement, Context2D, clearRect, getCanvasElementById, getContext2D)
+import Types (Graphic(..), Effs, StateTree(..), MetaData, AnimationOperation(..), AllEffs)
 import Utils (tree, subTree, getAnimOps)
 
 -- | Find bound to redraw and clear the screen with that bound
@@ -25,7 +27,7 @@ setupUpdate
    -> Eff (AllEffs eff) (Eff (AllEffs eff) Unit)
 setupUpdate ctx stateB evStream =
   subscribe sampler
-    \s -> clearRect ctx (rectBoundToClear (getBound s)) *> draw ctx s
+    \s -> clearRect ctx (rectBoundToClear (getBound s)) *> draw ctx empty s
       where
         rectBoundToClear {x, y, w, h} = {x: x - 2.0, y: y - 2.0, w: w + 4.0, h: h + 4.0}
         sampler = sample_ stateB evStream
@@ -66,7 +68,7 @@ animate stateB frameStream push =
 -- | Setup update loop and animation operations loop
 initCanvas :: CanvasElement -> Context2D -> Eff (Effs) Unit
 initCanvas c ctx = do
-  _ <- setStrokeStyle "#000000" ctx
+-- | graphic variables containing their own animation cycle and update cycle
   g <- createAnim ctx (tree [Translate 0.0 1.0, Translate 1.0 0.0]) 60
   g1 <- createAnim ctx (subTree [Translate 1.0 0.0]) 60
   pure unit

@@ -16,7 +16,7 @@ defaultMetaData :: Array AnimationOperation -> MetaData
 defaultMetaData animOps = MetaData {groupName: "default", animOps}
 
 defaultProps :: Map String String
-defaultProps = fromFoldable [ Tuple "id" "i" ]
+defaultProps = fromFoldable [ Tuple "id" "i", Tuple "stroke" "#eee123" ]
 
 subTree :: forall a. Array AnimationOperation -> StateTree (Shape a) MetaData
 subTree animOps = Parent meta (Draw defaultProps meta $ circle 300.0 250.0 20.0) (Draw defaultProps meta $ rectangle 200.0 200.0 50.0 50.0)
