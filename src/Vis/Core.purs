@@ -64,15 +64,6 @@ animate stateB frameStream push =
       -- | Perform each operation and update
       onSubscribe = \s -> foldM (\state op -> updateIfChanged (runOp state op) state) s (getAnimOps s)
 
--- | Create stateStream - stream of events for any new state
--- | Setup update loop and animation operations loop
-initCanvas :: CanvasElement -> Context2D -> Eff (Effs) Unit
-initCanvas c ctx = do
--- | graphic variables containing their own animation cycle and update cycle
-  g <- createAnim ctx (tree [Translate 0.0 1.0, Translate 1.0 0.0]) 60
-  g1 <- createAnim ctx (subTree [Translate 1.0 0.0]) 60
-  pure unit
-
 -- | Every Animation contains a state
 -- | has own update loop where it actually get's drawn
 -- | Animation loop where animation operations are done to state
@@ -93,12 +84,3 @@ createAnim ctx state frameRate = do
   animCanceller <- animate stateBeh frameStream push
   updateCanceller <- setupUpdate ctx stateBeh event
   pure $ Graphic {animCanceller, updateCanceller, state}
-
-
-
-init :: Eff Effs Unit
-init = do
-  maybeCanvas <- getCanvasElementById "canvas"
-  case maybeCanvas of
-       Just c -> getContext2D c >>= initCanvas c
-       Nothing -> log "no canvas found"
