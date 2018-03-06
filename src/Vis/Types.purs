@@ -1,4 +1,4 @@
-module Types ( AllEffs
+module Vis.Types ( AllEffs
              , CanvasEff
              , Effs
              , StateTree(..)

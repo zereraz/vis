@@ -1,4 +1,4 @@
-module Drawable (
+module Vis.Drawable (
     class Drawable
   , getBound
   , translate
@@ -12,7 +12,7 @@ import Control.Monad.Eff (Eff)
 import Data.Map (Map, empty, toUnfoldable)
 import Data.Traversable (traverse)
 import Graphics.Canvas (Context2D, Rectangle, arc, beginPath, closePath, rect, stroke)
-import Types (AllEffs, CanvasEff, MetaData, Property, Shape(..), StateTree(..), applyProperty, toProperty)
+import Vis.Types (AllEffs, CanvasEff, MetaData, Property, Shape(..), StateTree(..), applyProperty, toProperty)
 
 
 class Drawable a where

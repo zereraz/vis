@@ -1,10 +1,10 @@
-module Utils where
+module Vis.Utils where
 
 import Data.Map (Map, fromFoldable)
 import Data.Tuple (Tuple(..))
 import Math (pi)
 import Prelude (($), (*))
-import Types (Shape(..), StateTree(..), AnimationOperation, MetaData(..))
+import Vis.Types (Shape(..), StateTree(..), AnimationOperation, MetaData(..))
 
 circle :: forall a. Number -> Number -> Number -> Shape a
 circle x y r = Circle {x, y, r, start: 0.0, end: 2.0 * pi}
