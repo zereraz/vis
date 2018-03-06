@@ -1,4 +1,4 @@
-module Main where
+module Core where
 
 import Prelude
 
@@ -73,10 +73,10 @@ initCanvas c ctx = do
   g1 <- createAnim ctx (subTree [Translate 1.0 0.0]) 60
   pure unit
 
--- Every Animation contains a state
--- has own update loop where it actually get's drawn
--- Animation loop where animation operations are done to state
--- so it has animation pipe line
+-- | Every Animation contains a state
+-- | has own update loop where it actually get's drawn
+-- | Animation loop where animation operations are done to state
+-- | so it has animation pipe line
 createAnim
   :: forall a
    . Drawable a
@@ -96,8 +96,8 @@ createAnim ctx state frameRate = do
 
 
 
-main :: Eff (Effs) Unit
-main = do
+init :: Eff (Effs) Unit
+init = do
   maybeCanvas <- getCanvasElementById "canvas"
   case maybeCanvas of
        Just c -> getContext2D c >>= initCanvas c
