@@ -44,7 +44,7 @@ instance drawStateTree :: Drawable a => Drawable (StateTree a MetaData) where
   translate x y (Draw p m s) = Draw p m (translate x y s)
   translate x y (Parent m leftTree rightTree) = Parent m (translate x y leftTree) (translate x y rightTree)
 
-  setProperties ctx props (Draw p m s) = setProperties ctx p s
+  setProperties ctx props (Draw p m s) = setProperties ctx (props <> p) s
   setProperties ctx props (Parent m leftTree rightTree) = setProperties ctx props leftTree *> setProperties ctx props rightTree
 
 addBounds :: Rectangle -> Rectangle -> Rectangle
