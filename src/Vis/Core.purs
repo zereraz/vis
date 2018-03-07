@@ -1,20 +1,17 @@
-module Main where
+module Vis.Core where
 
 import Prelude
 
 import Control.Monad.Eff (Eff)
-import Control.Monad.Eff.Console (log)
 import Data.Array (foldM)
 import Data.Map (empty)
-import Data.Maybe (Maybe(..))
-import Drawable (class Drawable, draw, bound, rotate, scale, translate)
 import FRP.Behavior (Behavior, sample_, step)
 import FRP.Event (Event, create, subscribe)
 import FRP.Event.Time (interval)
-import Graphics.Canvas (CanvasElement, Context2D, clearRect, getCanvasElementById, getContext2D)
-import Math (pi)
-import Types (Graphic(..), Effs, StateTree(..), MetaData, AnimationOperation(..), AllEffs)
-import Utils (tree, subTree, getAnimOps)
+import Graphics.Canvas (Context2D, clearRect)
+import Vis.Drawable (class Drawable, bound, draw, rotate, scale, translate)
+import Vis.Types (AllEffs, AnimationOperation(..), Effs, Graphic(..), MetaData, StateTree(..), Gref)
+import Vis.Utils (getAnimOps)
 
 -- | Find bound to redraw and clear the screen with that bound
 -- | then draw the stateTree given to it via state behavior
@@ -70,19 +67,10 @@ animate stateB frameStream push =
       -- | Perform each operation and update
       onSubscribe = \s -> foldM (\state op -> updateIfChanged (runOp state op) state) s (getAnimOps s)
 
--- | Create stateStream - stream of events for any new state
--- | Setup update loop and animation operations loop
-initCanvas :: CanvasElement -> Context2D -> Eff (Effs) Unit
-initCanvas c ctx = do
--- | graphic variables containing their own animation cycle and update cycle
-  g <- createAnim ctx (tree [Translate 0.0 1.0, Rotate 0.0 0.0 (pi / 4.0)]) 60
-  g1 <- createAnim ctx (subTree [Translate 1.0 1.0]) 60
-  pure unit
-
--- Every Animation contains a state
--- has own update loop where it actually get's drawn
--- Animation loop where animation operations are done to state
--- so it has animation pipe line
+-- | Every Animation contains a state
+-- | has own update loop where it actually get's drawn
+-- | Animation loop where animation operations are done to state
+-- | so it has animation pipe line
 createAnim
   :: forall a
    . Drawable a
@@ -90,21 +78,12 @@ createAnim
    => Context2D
    -> StateTree a MetaData
    -> Int
-   -> Eff Effs (Graphic a)
+   -> Eff (Effs) (Graphic (Gref a))
 createAnim ctx state frameRate = do
-  {event, push} <- create
+  { event, push } <- create
   let stateBeh = step state event
       frameInterval = 1000 / frameRate
       frameStream = interval frameInterval
   animCanceller <- animate stateBeh frameStream push
   updateCanceller <- setupUpdate ctx stateBeh event
   pure $ Graphic {animCanceller, updateCanceller, state}
-
-
-
-main :: Eff (Effs) Unit
-main = do
-  maybeCanvas <- getCanvasElementById "canvas"
-  case maybeCanvas of
-       Just c -> getContext2D c >>= initCanvas c
-       Nothing -> log "no canvas found"

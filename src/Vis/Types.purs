@@ -1,4 +1,4 @@
-module Types ( AllEffs
+module Vis.Types ( AllEffs
              , CanvasEff
              , Effs
              , StateTree(..)
@@ -67,7 +67,7 @@ type Gref a = {
   , animCanceller :: Eff Effs Unit
   , state :: StateTree a MetaData
 }
-newtype Graphic a = Graphic (Gref a)
+newtype Graphic a = Graphic a
 
 instance shapeEq :: Eq (Shape a) where
   eq (Circle c) (Circle c') = c.x == c'.x

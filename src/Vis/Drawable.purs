@@ -1,4 +1,4 @@
-module Drawable (
+module Vis.Drawable (
     class Drawable
   , bound
   , translate
@@ -9,22 +9,16 @@ module Drawable (
   ) where
 
 import Prelude
-import Types
 
 import Control.Monad.Eff (Eff)
-import Control.Monad.Eff.Console (CONSOLE, log, logShow)
 import Data.Array (foldl, head, tail)
 import Data.Map (Map, empty, toUnfoldable)
 import Data.Maybe (fromMaybe)
-import Data.Newtype (overF)
 import Data.Traversable (sequence, traverse)
-import FRP (FRP)
-import FRP.Behavior (Behavior, sample_, step)
-import FRP.Event (Event, create, subscribe)
-import FRP.Event.Time (interval)
 import Global (infinity)
-import Graphics.Canvas (Arc, CANVAS, CanvasElement, Context2D, Rectangle, arc, beginPath, clearRect, closePath, getCanvasElementById, getContext2D, lineTo, moveTo, rect, setStrokeStyle, stroke)
-import Math (Radians, cos, pi, pow, sin, sqrt)
+import Graphics.Canvas (Context2D, Rectangle, arc, beginPath, closePath, lineTo, moveTo, rect, stroke)
+import Math (Radians, cos, sin)
+import Vis.Types (AllEffs, CanvasEff, MetaData, Property, Shape(..), StateTree(..), Point, applyProperty, toProperty)
 
 
 path' :: forall e. Context2D -> Array Point -> Eff (CanvasEff e) Unit
@@ -89,7 +83,7 @@ instance drawStateTree :: Drawable a => Drawable (StateTree a MetaData) where
   translate x y (Draw p m s) = Draw p m (translate x y s)
   translate x y (Parent m leftTree rightTree) = Parent m (translate x y leftTree) (translate x y rightTree)
 
-  setProperties ctx props (Draw p m s) = setProperties ctx p s
+  setProperties ctx props (Draw p m s) = setProperties ctx (props <> p) s
   setProperties ctx props (Parent m leftTree rightTree) = setProperties ctx props leftTree *> setProperties ctx props rightTree
 
   rotate x y ang (Draw p m s) = Draw p m $ rotate x y ang s
