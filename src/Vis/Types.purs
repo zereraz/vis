@@ -4,6 +4,7 @@ module Vis.Types ( AllEffs
              , StateTree(..)
              , Shape(..)
              , MetaData(..)
+             , Point
              , AnimationOperation(..)
              , AnimationOperations(..)
              , Graphic(..)
@@ -27,15 +28,17 @@ type AllEffs eff = (console :: CONSOLE, canvas :: CANVAS, frp :: FRP | eff)
 type CanvasEff eff = (canvas :: CANVAS | eff)
 type Effs = (console :: CONSOLE, canvas :: CANVAS, frp :: FRP)
 
+type Point = { x :: Number, y :: Number }
+
 -- TODO: change map string -> string to more generic?
 -- use things similar to smolder for attributes
 data StateTree a b = Draw (Map String String) b (Shape a) | Parent b (StateTree a b) (StateTree a b)
 
-data Shape a = Circle Arc | Rect Rectangle
+data Shape a = Circle Arc | Rect Rectangle | Path (Array Point)
 
 newtype MetaData = MetaData { groupName :: String, animOps :: Array AnimationOperation }
 
-data AnimationOperation = Translate Number Number | Rotate Number
+data AnimationOperation = Translate Number Number | Rotate Number Number Number | Scale Number Number Number
 
 type AnimationOperations = Array AnimationOperation
 
@@ -67,8 +70,15 @@ type Gref a = {
 newtype Graphic a = Graphic a
 
 instance shapeEq :: Eq (Shape a) where
-  eq (Circle c1) (Circle c2) = c1.x == c2.x && c1.y == c2.y && c1.r == c2.r
-  eq (Rect r1) (Rect r2) = r1.x == r2.x && r1.y == r2.y && r1.w == r2.w && r1.h == r2.h
+  eq (Circle c) (Circle c') = c.x == c'.x
+                           && c.y == c'.y
+                           && c.r == c'.r
+  eq (Rect r) (Rect r') = r.x == r'.x
+                       && r.y == r'.y
+                       && r.w == r'.w
+                       && r.h == r'.h
+  eq (Path p) (Path p') = map _.x p == map _.x p'
+                       && map _.y p == map _.y p'
   eq _ _ = false
 
 instance stateTreeEq :: Eq a => Eq (StateTree a MetaData) where
@@ -81,5 +91,7 @@ instance metaDataEq :: Eq MetaData where
 
 instance animOpsEq :: Eq AnimationOperation where
   eq (Translate x1 y1) (Translate x2 y2) = x1 == x2 && y1 == y2
-  eq (Rotate r1) (Rotate r2) = r1 == r2
+  eq (Rotate x1 y1 a1) (Rotate x2 y2 a2) = x1 == x2 
+                                        && y1 == y2
+                                        && a1 == a2
   eq _ _ = false

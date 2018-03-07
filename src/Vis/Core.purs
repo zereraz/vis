@@ -9,7 +9,7 @@ import FRP.Behavior (Behavior, sample_, step)
 import FRP.Event (Event, create, subscribe)
 import FRP.Event.Time (interval)
 import Graphics.Canvas (Context2D, clearRect)
-import Vis.Drawable (class Drawable, getBound, draw, translate)
+import Vis.Drawable (class Drawable, bound, draw, rotate, scale, translate)
 import Vis.Types (AllEffs, AnimationOperation(..), Effs, Graphic(..), MetaData, StateTree(..), Gref)
 import Vis.Utils (getAnimOps)
 
@@ -25,7 +25,7 @@ setupUpdate
    -> Eff (AllEffs eff) (Eff (AllEffs eff) Unit)
 setupUpdate ctx stateB evStream =
   subscribe sampler
-    \s -> clearRect ctx (rectBoundToClear (getBound s)) *> draw ctx empty s
+    \s -> clearRect ctx (rectBoundToClear $ bound s) *> draw ctx empty s
       where
         rectBoundToClear {x, y, w, h} = {x: x - 2.0, y: y - 2.0, w: w + 4.0, h: h + 4.0}
         sampler = sample_ stateB evStream
@@ -40,7 +40,12 @@ runOp
    -> StateTree a MetaData
 runOp (Draw p m s) (Translate x y) = Draw p m (translate x y s)
 runOp (Parent v lTree rTree) (Translate x y) = Parent v (translate x y lTree) (translate x y rTree)
-runOp s _ = s
+
+runOp (Draw p m s) (Rotate x y ang) = Draw p m (rotate x y ang s)
+runOp (Parent v lTree rTree) (Rotate x y ang) = Parent v (rotate x y ang lTree) (rotate x y ang rTree)
+
+runOp (Draw p m s) (Scale x y r) = Draw p m (scale x y r s)
+runOp (Parent v lTree rTree) (Scale x y r) = Parent v (scale x y r lTree) (scale x y r rTree)
 
 -- | At each event/tick of frameStream perform all animOperations
 -- | Check if state changed, if changed push the new state to stateStream
