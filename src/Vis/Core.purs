@@ -3,17 +3,15 @@ module Vis.Core where
 import Prelude
 
 import Control.Monad.Eff (Eff)
-import Control.Monad.Eff.Console (log)
 import Data.Array (foldM)
 import Data.Map (empty)
-import Data.Maybe (Maybe(..))
-import Vis.Drawable (class Drawable, getBound, draw, translate)
 import FRP.Behavior (Behavior, sample_, step)
 import FRP.Event (Event, create, subscribe)
 import FRP.Event.Time (interval)
-import Graphics.Canvas (CanvasElement, Context2D, clearRect, getCanvasElementById, getContext2D)
-import Vis.Types (Graphic(..), Effs, StateTree(..), MetaData, AnimationOperation(..), AllEffs)
-import Vis.Utils (tree, subTree, getAnimOps)
+import Graphics.Canvas (Context2D, clearRect)
+import Vis.Drawable (class Drawable, getBound, draw, translate)
+import Vis.Types (AllEffs, AnimationOperation(..), Effs, Graphic(..), MetaData, StateTree(..), Gref)
+import Vis.Utils (getAnimOps)
 
 -- | Find bound to redraw and clear the screen with that bound
 -- | then draw the stateTree given to it via state behavior
@@ -75,9 +73,9 @@ createAnim
    => Context2D
    -> StateTree a MetaData
    -> Int
-   -> Eff Effs (Graphic a)
+   -> Eff (Effs) (Graphic (Gref a))
 createAnim ctx state frameRate = do
-  {event, push} <- create
+  { event, push } <- create
   let stateBeh = step state event
       frameInterval = 1000 / frameRate
       frameStream = interval frameInterval

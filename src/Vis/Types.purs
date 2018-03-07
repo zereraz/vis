@@ -64,7 +64,7 @@ type Gref a = {
   , animCanceller :: Eff Effs Unit
   , state :: StateTree a MetaData
 }
-newtype Graphic a = Graphic (Gref a)
+newtype Graphic a = Graphic a
 
 instance shapeEq :: Eq (Shape a) where
   eq (Circle c1) (Circle c2) = c1.x == c2.x && c1.y == c2.y && c1.r == c2.r
