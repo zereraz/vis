@@ -36,7 +36,7 @@ data StateTree a b = Draw (Map String String) b (Shape a) | Parent b (StateTree 
 
 data Shape a = Circle Arc | Rect Rectangle | Path (Array Point)
 
-newtype MetaData = MetaData { groupName :: String, animOps :: Array AnimationOperation }
+newtype MetaData = MetaData { groupName :: String, animOps :: Array AnimationOperation, globalClear :: Boolean }
 
 data AnimationOperation = Translate Number Number | Rotate Number Number Number | Scale Number Number Number
 

@@ -11,7 +11,7 @@ import FRP.Event.Time (interval)
 import Graphics.Canvas (Context2D, clearRect)
 import Vis.Drawable (class Drawable, bound, draw, rotate, scale, translate)
 import Vis.Types (AllEffs, AnimationOperation(..), Effs, Graphic(..), MetaData, StateTree(..), Gref)
-import Vis.Utils (getAnimOps)
+import Vis.Utils (getAnimOps, globalBound, globalClear)
 
 -- | Find bound to redraw and clear the screen with that bound
 -- | then draw the stateTree given to it via state behavior
@@ -25,7 +25,7 @@ setupUpdate
    -> Eff (AllEffs eff) (Eff (AllEffs eff) Unit)
 setupUpdate ctx stateB evStream =
   subscribe sampler
-    \s -> clearRect ctx (rectBoundToClear $ bound s) *> draw ctx empty s
+    \s -> (if globalClear s then clearRect ctx globalBound else clearRect ctx (rectBoundToClear $ bound s)) *> draw ctx empty s
       where
         rectBoundToClear {x, y, w, h} = {x: x - 2.0, y: y - 2.0, w: w + 4.0, h: h + 4.0}
         sampler = sample_ stateB evStream
@@ -86,4 +86,5 @@ createAnim ctx state frameRate = do
       frameStream = interval frameInterval
   animCanceller <- animate stateBeh frameStream push
   updateCanceller <- setupUpdate ctx stateBeh event
+  push state -- first time
   pure $ Graphic {animCanceller, updateCanceller, state}
