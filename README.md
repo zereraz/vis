@@ -8,3 +8,7 @@ Create graphics and animations easily!
 
  `pulp build` 
  
+### Disclaimer
+
+ * Experimental library, made to find better ways to express animations
+ * Do some frp based experiments
