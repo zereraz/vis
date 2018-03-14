@@ -6,6 +6,7 @@ module Vis.Types ( AllEffs
              , MetaData(..)
              , Point
              , AnimationOperation(..)
+             , EndOperation(..)
              , AnimationOperations(..)
              , Graphic(..)
              , Gref
@@ -38,7 +39,9 @@ data Shape a = Circle Arc | Rect Rectangle | Path (Array Point)
 
 newtype MetaData = MetaData { groupName :: String, animOps :: Array AnimationOperation, globalClear :: Boolean }
 
-data AnimationOperation = Translate Number Number | Rotate Number Number Number | Scale Number Number Number
+data AnimationOperation = Translate Number Number | Rotate Number Number Number | Scale Number Number Number | Complete (Tuple AnimationOperation EndOperation)
+
+data EndOperation = EndPoint Number Number
 
 type AnimationOperations = Array AnimationOperation
 
@@ -91,7 +94,24 @@ instance metaDataEq :: Eq MetaData where
 
 instance animOpsEq :: Eq AnimationOperation where
   eq (Translate x1 y1) (Translate x2 y2) = x1 == x2 && y1 == y2
-  eq (Rotate x1 y1 a1) (Rotate x2 y2 a2) = x1 == x2 
+  eq (Rotate x1 y1 a1) (Rotate x2 y2 a2) = x1 == x2
                                         && y1 == y2
                                         && a1 == a2
+  eq (Complete (Tuple a1 b1)) (Complete (Tuple a2 b2)) = eq a1 a2 && eq b1 b2
   eq _ _ = false
+
+instance endOpEq :: Eq EndOperation where
+  eq (EndPoint x1 y1) (EndPoint x2 y2) = x1 == x2 && y1 == y2
+  eq _ _ = false
+
+instance showStateTree :: Show (StateTree a MetaData) where
+  show (Draw p m s) = "Draw " <> show p <> show m <> show s
+  show (Parent v lTree rTree) = "Parent " <> show v <> show lTree <> show rTree
+
+instance showShape :: Show (Shape a) where
+  show (Circle a) = "Circle " <> show a.x <> " " <> show a.y <> " " <> show a.r
+  show (Rect r) = "Rectangle " <> show r.x <> " " <> show r.y <> " " <> show r.w <> " " <> show r.h
+  show _ = "Path"
+
+instance showMetaData :: Show (MetaData) where
+  show (MetaData m) = "MetaData"

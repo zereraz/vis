@@ -3,14 +3,18 @@ module Vis.Core where
 import Prelude
 
 import Control.Monad.Eff (Eff)
-import Data.Array (foldM)
+import Control.Monad.Eff.Console (logShow)
+import Data.Array (foldM, (!!))
 import Data.Map (empty)
+import Data.Maybe (fromMaybe)
+import Data.Tuple (Tuple(..))
 import FRP.Behavior (Behavior, sample_, step)
 import FRP.Event (Event, create, subscribe)
 import FRP.Event.Time (interval)
-import Graphics.Canvas (Context2D, clearRect)
+import Graphics.Canvas (Context2D, Rectangle, clearRect)
+import Math (round)
 import Vis.Drawable (class Drawable, bound, draw, rotate, scale, translate)
-import Vis.Types (AllEffs, AnimationOperation(..), Effs, Graphic(..), MetaData, StateTree(..), Gref)
+import Vis.Types (AllEffs, AnimationOperation(..), Effs, EndOperation(..), Graphic(..), Gref, MetaData, Shape(..), StateTree(..))
 import Vis.Utils (getAnimOps, globalBound, globalClear)
 
 -- | Find bound to redraw and clear the screen with that bound
@@ -47,6 +51,14 @@ runOp (Parent v lTree rTree) (Rotate x y ang) = Parent v (rotate x y ang lTree) 
 runOp (Draw p m s) (Scale x y r) = Draw p m (scale x y r s)
 runOp (Parent v lTree rTree) (Scale x y r) = Parent v (scale x y r lTree) (scale x y r rTree)
 
+runOp d@(Draw p m s) op@(Complete (Tuple mainOp (EndPoint x1 y1))) = if ( (round st.x) == x1 && (round st.y) == y1) then d else runOp d mainOp
+  where
+    st = getShapeState s
+    getShapeState (Circle a) = {x: a.x, y: a.y}
+    getShapeState (Rect a) = {x: a.x, y: a.y}
+    getShapeState (Path arr) = let firstPt = fromMaybe {x:(-1.0), y:(-1.0)} (arr !! 0) in {x: firstPt.x, y: firstPt.y}
+runOp d@(Parent v lTree rTree) op@(Complete (Tuple _ (EndPoint x1 y1))) = Parent v (runOp lTree op) (runOp rTree op)
+
 -- | At each event/tick of frameStream perform all animOperations
 -- | Check if state changed, if changed push the new state to stateStream
 animate
@@ -65,7 +77,7 @@ animate stateB frameStream push =
       -- | Send new state event when state changed
       updateIfChanged newState oldState = when (not $ newState == oldState) (push newState) *> pure newState
       -- | Perform each operation and update
-      onSubscribe = \s -> foldM (\state op -> updateIfChanged (runOp state op) state) s (getAnimOps s)
+      onSubscribe = \s -> foldM (\state -> runOp state >>> \s -> logShow s *> pure s) s (getAnimOps s) >>= push
 
 -- | Every Animation contains a state
 -- | has own update loop where it actually get's drawn
