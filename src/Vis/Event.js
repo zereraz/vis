@@ -5,19 +5,16 @@ exports.setOnLoad = function(fn) {
 
 exports.setOnResize = function(sub) {
   window.onresize = function() {
-    sub({x: window.innerWidth, y: window.innerHeight})
+    sub({width: window.innerWidth, height: window.innerHeight})
   };
-  return function(){};
 }
 
 exports.setOnClick = function(el) {
   return function(sub) {
     if(el) {
-      var cb = function(e) {
+      el.addEventListener("click", function(e) {
         sub({x: e.clientX, y: e.clientY})
-      }
-      el.addEventListener("click", cb);
-      return function(){};
+      });
     } else {
       throw new Error ("element for onClick null");
     }
