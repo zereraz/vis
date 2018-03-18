@@ -3,16 +3,20 @@ module Main where
 import Prelude
 
 import Control.Monad.Eff (Eff)
-import Control.Monad.Eff.Console (log, logShow)
+import Control.Monad.Eff.Console (CONSOLE, log, logShow)
 import Data.Foldable (foldM)
 import Data.Map (empty, insert, lookup)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Traversable (traverse)
 import Data.Tuple (Tuple(..))
-import Graphics.Canvas (CanvasElement, Context2D, Arc, getCanvasElementById, getContext2D)
-import Math (atan, cos, pow, sin, sqrt)
+import FRP (FRP)
+import FRP.Behavior (Behavior, step)
+import FRP.Event (Event)
+import Graphics.Canvas (Arc, CANVAS, CanvasElement, Context2D, arc, getCanvasElementById, getCanvasHeight, getCanvasWidth, getContext2D, setStrokeStyle, stroke)
+import Math (atan, cos, pi, pow, sin, sqrt)
 import Vis.Core (createAnim)
 import Vis.Drawable (class Drawable)
+import Vis.Event (setOnClick, setOnLoad, setOnResize)
 import Vis.Types (AnimationOperation(..), Effs, EndOperation(..), Graphic(..), Gref, MetaData(..), Shape(..), StateTree, StateTree(..), Point)
 import Vis.Utils (circle, defaultMetaData, defaultProps, tree)
 
@@ -23,46 +27,43 @@ init = do
        Just c -> getContext2D c >>= initCanvas c
        Nothing -> log "no canvas found"
 
-mkCircle :: forall a. Array AnimationOperation -> Number -> Number -> Number -> StateTree (Shape a) MetaData
-mkCircle animOps x y =  Draw defaultProps (defaultMetaData animOps) <<<  circle x y
+type Dynamic a = {
+    beh :: Behavior a
+  , ev :: Event a
+}
 
-getPoint :: forall a. Graphic (Gref a) -> Point
-getPoint (Graphic gref) = getState gref.state
-  where
-    getState (Draw p b s) = unwrapShape s
-    getState (Parent v lTree rTree) = {x: (lpt.x + rpt.x) / 2.0, y: (lpt.y + rpt.y) / 2.0}
-      where
-        lpt = getState lTree
-        rpt = getState rTree
-    unwrapShape (Circle s) = {x: s.x, y: s.y}
-    unwrapShape (Rect r) = {x: r.x, y: r.y}
-    unwrapShape _ = {x: (-1.0), y: (-1.0)}
+type GlobalStreams = {
+    click :: Dynamic {x :: Number, y :: Number}
+  , resize :: Dynamic {width :: Number, height :: Number}
+  {-- , drag :: Dynamic {x :: Number, y :: Number} --}
+}
 
-getSlope :: Point -> Point -> Number
-getSlope to from = (to.y - from.y) / (to.x - from.x)
+initGlobalListeners :: CanvasElement -> Eff Effs GlobalStreams
+initGlobalListeners c = do
+  _ <- setOnLoad onLoad
+  let resizeEv = setOnResize
+      resizeBeh = step {width: -1.0, height: -1.0} resizeEv
+      clickEv = setOnClick c
+      clickBeh = step {x: -1.0, y: -1.0} clickEv
+  pure {click: {beh: clickBeh, ev: clickEv}, resize: {beh: resizeBeh, ev: resizeEv}}
 
--- | Create stateStream - stream of events for any new state
--- | Setup update loop and animation operations loop
-initCanvas :: CanvasElement -> Context2D -> Eff Effs Unit
+
+onLoad :: Eff Effs Unit
+onLoad = do
+  log "on load!"
+
+initCanvas :: CanvasElement -> Context2D ->  Eff Effs Unit
 initCanvas c ctx = do
--- | graphic variables containing their own animation cycle and update cycle
-  let arrPoints = [{x: 50.0, y: 350.0, r: 10.0, id: "1"}, { x: 50.0, y: 250.0, r: 10.0, id: "2"}, {x: 140.0, y: 250.0, r: 10.0, id: "3"}, { x: 210.0, y: 50.0, r: 10.0, id: "4"}]
-      animatePointsFrom = [{to: "1", from: "2"}, {to:"4", from:"3"}]
-  refMap <- foldM (\pointMap p -> createAnim ctx (mkCircle [] p.x p.y p.r) 60 >>= (flip (insert p.id) pointMap) >>> pure) empty arrPoints
-  _ <- traverse (\p -> let maybeG1 = lookup p.to refMap
-                           maybeG2 = lookup p.from refMap
-                       in case [maybeG1, maybeG2] of
-                            [Just g1, Just g2] ->
-                              let to = getPoint g1
-                                  from = getPoint g2
-                                  slope = getSlope to from
-                                  theta = atan slope
-                               in createAnim ctx (mkCircle [Complete (Tuple (Translate (cos theta) (sin theta)) (EndPoint to.x to.y))] from.x from.y 3.0) 60 *> pure unit
-
-                            _                 -> pure unit) animatePointsFrom
+  globalStream <- initGlobalListeners c
+  width <- getCanvasWidth c
+  height <- getCanvasHeight c
+  _ <- arc ctx {x:width/2.0,y:height/2.0,r:40.0,start:0.0,end:2.0 * pi}
+  _ <- setStrokeStyle "black" ctx
+  _ <- stroke ctx
   pure unit
 
 
-main :: Eff (Effs) Unit
+main :: Eff Effs Unit
 main = do
   init
+

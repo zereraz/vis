@@ -77,7 +77,7 @@ animate stateB frameStream push =
       -- | Send new state event when state changed
       updateIfChanged newState oldState = when (not $ newState == oldState) (push newState) *> pure newState
       -- | Perform each operation and update
-      onSubscribe = \s -> foldM (\state -> runOp state >>> \s -> logShow s *> pure s) s (getAnimOps s) >>= push
+      onSubscribe = \s -> foldM (\state -> runOp state >>> pure) s (getAnimOps s) >>= push
 
 -- | Every Animation contains a state
 -- | has own update loop where it actually get's drawn
